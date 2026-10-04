@@ -14,7 +14,7 @@ Run the React client separately from `../TLOM` with `npm start`. The development
 
 ## Architecture
 
-The project is organized by component type: `controller` contains REST resources, `service` contains application logic, `repository` contains in-memory data access, and `model` contains domain and API models. Controllers call services, which call repositories. `PackageService -> JourneyService` creates Player-owned runtime occurrences after a validated installation. No ports, adapters, ORM or external infrastructure are used.
+The project is organized by component type: `controller` contains REST resources, `service` contains application logic, `repository` contains in-memory data access, and `model` contains domain and API models. Controllers call services, which call repositories. `PackageService -> JourneyService` creates Player-owned runtime occurrences after a validated installation. Purchases follow `PurchaseRest -> PurchaseService -> StoreService/JourneyService -> PurchaseRepository/JourneyRepository`. No ports, adapters, ORM or external infrastructure are used.
 
 Implemented features are `player`, `localization`, `packagecontent` and `journey`. The deterministic development identity is exposed at `GET /api/v1/me`; authentication is intentionally absent. On server startup, the `healthy-lifestyle` package is installed with its declared defaults, so the development Player starts with a pending Daily walk worth `1 HC`.
 
@@ -27,14 +27,17 @@ Implemented features are `player`, `localization`, `packagecontent` and `journey
 - `GET /api/v1/me/journey`: Player installations plus runtime currencies, campaigns, missions, Goals and GoalOccurrences.
 - `POST /api/v1/goal-occurrences/{id}/complete`: authoritative completion. The server resolves rewards and adds ledger facts only once.
 - `GET /api/v1/me/wallet`: Wallet projection calculated from Ledger entries.
+- `GET /api/v1/me/stores`: Store and StoreItem definitions materialized only from installed Packages.
+- `POST /api/v1/stores/{storeId}/purchases`: purchase intent containing only `storeItemId` and `requestId`.
+- `GET /api/v1/me/purchases`: authoritative Purchase history with the immutable price snapshot paid.
 
-Errors are JSON `{code, message}` responses. Client-provided reward amounts, balances, prices and completion state are never trusted.
+Errors are JSON `{code, message}` responses. Client-provided reward amounts, balances, prices and completion state are never trusted. Purchase debits are negative Ledger entries with `PURCHASE:<purchaseId>` source keys; the Wallet remains a projection of all Ledger entries. A repeated Purchase `requestId` returns the original Purchase and does not create another debit, while a different request ID can buy the same item again when funds permit.
 
 ## Cache And Persistence
 
-The React API client caches read responses in memory. Localization implements `ETag`/`If-None-Match`; the package catalog is read through the same client cache helper but does not yet expose an ETag. Journey and Wallet are server-authoritative projections refreshed after commands. Repositories are in memory: restarting the server resets Player state and reapplies the Healthy Lifestyle bootstrap. React refresh while the server remains running reconstructs migrated journey and wallet state from server responses.
+The React API client caches read responses in memory. Localization implements `ETag`/`If-None-Match`; the package and installed Store catalogs use the same cache helper but do not yet expose an ETag. Journey, Wallet and Purchase history are server-authoritative projections refreshed after commands. Repositories are in memory: restarting the server resets Player state and reapplies the Healthy Lifestyle bootstrap. React refresh while the server remains running reconstructs migrated journey, wallet and purchases from server responses.
 
-Party/Master, authentication, persistence and migrations, Package updates/reconfiguration, full Store/Purchase authority, scheduling, offline write synchronization and complete localization remain deferred. Completion retry safety currently derives from the stored occurrence and ledger source key; `X-Request-Id` is not independently persisted.
+Party/Master, authentication, persistence and migrations, Package updates/reconfiguration, scheduling, offline write synchronization and complete localization remain deferred. Completion retry safety currently derives from the stored occurrence and ledger source key; Purchase request idempotency is retained in memory for the server process lifetime.
 
 Run server tests with `./mvnw test`.
 # tlom-server

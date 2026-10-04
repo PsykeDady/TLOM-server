@@ -56,6 +56,6 @@ public class PackageService {
             var binding = definition.bindings().stream().filter(item -> item.targetType().equals(GOAL_REWARD_AMOUNT) && item.targetId().equals(goal.id()) && item.rewardId().equals(reward.id())).findFirst();
             return binding.map(item -> new ActivityPackage.Reward(reward.id(), reward.type(), reward.currencyId(), values.get(item.parameterId()))).orElse(reward);
         }).toList())).toList();
-        return new ActivityPackage(definition.id(), definition.version(), definition.name(), definition.description(), definition.currencies(), resolvedGoals, definition.missions(), definition.campaigns(), definition.parameters(), definition.bindings());
+        return new ActivityPackage(definition.id(), definition.version(), definition.name(), definition.description(), definition.currencies(), resolvedGoals, definition.missions(), definition.campaigns(), definition.stores(), definition.storeItems(), definition.parameters(), definition.bindings());
     }
 }

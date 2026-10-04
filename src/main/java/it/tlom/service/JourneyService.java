@@ -35,7 +35,7 @@ public class JourneyService {
             var goal = repository.goals().get(occurrence.goalId());
             goal.rewards().stream().filter(reward -> "CURRENCY".equals(reward.type())).forEach(reward -> {
                 String sourceKey = "GOAL_OCCURRENCE:" + occurrence.id() + ":" + reward.id();
-                if (!repository.hasLedgerSource(sourceKey)) repository.addLedger(new JourneyRepository.LedgerState(sourceKey, reward.currencyId(), reward.amount(), sourceKey));
+                if (!repository.hasLedgerSource(sourceKey)) repository.addLedger(new JourneyRepository.LedgerState(sourceKey, reward.currencyId(), reward.amount(), "GOAL_OCCURRENCE", occurrence.id(), sourceKey));
             });
         }
         return new CompletionResponse(journey(), wallet());
@@ -44,6 +44,10 @@ public class JourneyService {
     public WalletResponse wallet() {
         List<WalletBalance> balances = repository.currencies().values().stream().map(currency -> new WalletBalance(currency.id(), currency.name(), currency.symbol(), repository.ledger().stream().filter(entry -> entry.currencyId().equals(currency.id())).mapToInt(JourneyRepository.LedgerState::amount).sum())).toList();
         return new WalletResponse(balances, repository.ledger().size());
+    }
+
+    public int walletBalance(String currencyId) {
+        return repository.ledger().stream().filter(entry -> entry.currencyId().equals(currencyId)).mapToInt(JourneyRepository.LedgerState::amount).sum();
     }
 
     public record JourneyResponse(List<ActivityPackage.Installation> installations,

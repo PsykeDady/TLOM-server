@@ -13,6 +13,8 @@ public class JourneyRepository {
     private final Map<String, ActivityPackage.Currency> currencies = new LinkedHashMap<>();
     private final Map<String, ActivityPackage.Mission> missions = new LinkedHashMap<>();
     private final Map<String, ActivityPackage.Campaign> campaigns = new LinkedHashMap<>();
+    private final Map<String, ActivityPackage.Store> stores = new LinkedHashMap<>();
+    private final Map<String, ActivityPackage.StoreItem> storeItems = new LinkedHashMap<>();
     private final Map<String, ActivityPackage.Goal> goals = new LinkedHashMap<>();
     private final Map<String, OccurrenceState> occurrences = new LinkedHashMap<>();
     private final List<LedgerState> ledger = new ArrayList<>();
@@ -21,6 +23,8 @@ public class JourneyRepository {
     public Map<String, ActivityPackage.Currency> currencies() { return Map.copyOf(currencies); }
     public Map<String, ActivityPackage.Mission> missions() { return Map.copyOf(missions); }
     public Map<String, ActivityPackage.Campaign> campaigns() { return Map.copyOf(campaigns); }
+    public Map<String, ActivityPackage.Store> stores() { return Map.copyOf(stores); }
+    public Map<String, ActivityPackage.StoreItem> storeItems() { return Map.copyOf(storeItems); }
     public Map<String, ActivityPackage.Goal> goals() { return Map.copyOf(goals); }
     public List<OccurrenceState> occurrences() { return List.copyOf(occurrences.values()); }
     public List<LedgerState> ledger() { return List.copyOf(ledger); }
@@ -38,6 +42,15 @@ public class JourneyRepository {
             String campaignId = runtimeId(definition.id(), "campaign", campaign.id());
             campaigns.put(campaignId, new ActivityPackage.Campaign(campaignId, campaign.name(), campaign.missionIds().stream().map(missionId -> runtimeId(definition.id(), "mission", missionId)).toList(), campaign.ownership()));
         });
+        definition.storeItems().forEach(item -> {
+            String itemId = runtimeId(definition.id(), "store-item", item.id());
+            var price = new ActivityPackage.Price(runtimeId(definition.id(), "currency", item.price().currencyId()), item.price().amount());
+            storeItems.put(itemId, new ActivityPackage.StoreItem(itemId, item.name(), item.description(), price));
+        });
+        definition.stores().forEach(store -> {
+            String storeId = runtimeId(definition.id(), "store", store.id());
+            stores.put(storeId, new ActivityPackage.Store(storeId, store.name(), store.itemIds().stream().map(itemId -> runtimeId(definition.id(), "store-item", itemId)).toList()));
+        });
         definition.goals().forEach(goal -> {
             String goalId = runtimeId(definition.id(), "goal", goal.id());
             var rewards = goal.rewards().stream().map(reward -> new ActivityPackage.Reward(runtimeId(definition.id(), "reward", reward.id()), reward.type(), reward.currencyId() == null ? null : runtimeId(definition.id(), "currency", reward.currencyId()), reward.amount())).toList();
@@ -53,5 +66,5 @@ public class JourneyRepository {
 
     private static String runtimeId(String packageId, String type, String localId) { return packageId + "::" + type + "::" + localId; }
     public record OccurrenceState(String id, String goalId, String status) { }
-    public record LedgerState(String id, String currencyId, int amount, String sourceKey) { }
+    public record LedgerState(String id, String currencyId, int amount, String sourceType, String sourceId, String sourceKey) { }
 }
