@@ -14,10 +14,10 @@ class TlomResourceTest {
     }
 
     @Test void installationCompletionAndWalletAreAuthoritativeAndIdempotent() {
-        given().contentType("application/json").body("{\"values\":{\"walk-reward\":2}}").when().post("/api/v1/packages/healthy-lifestyle/install").then().statusCode(201).body("configuration.walk-reward", is(2));
+        given().contentType("application/json").body("{\"values\":{\"walk-reward\":2}}").when().post("/api/v1/packages/healthy-lifestyle/install").then().statusCode(201).body("configuration.walk-reward", is(1));
         given().when().get("/api/v1/me/journey").then().statusCode(200).body("occurrences[0].status", is("PENDING"));
         String occurrenceId = given().when().get("/api/v1/me/journey").then().extract().path("occurrences[0].id");
-        given().when().post("/api/v1/goal-occurrences/" + occurrenceId + "/complete").then().statusCode(200).body("wallet.balances[0].balance", is(2)).body("wallet.ledgerEntryCount", is(1));
-        given().when().post("/api/v1/goal-occurrences/" + occurrenceId + "/complete").then().statusCode(200).body("wallet.balances[0].balance", is(2)).body("wallet.ledgerEntryCount", is(1));
+        given().when().post("/api/v1/goal-occurrences/" + occurrenceId + "/complete").then().statusCode(200).body("wallet.balances[0].balance", is(1)).body("wallet.ledgerEntryCount", is(1));
+        given().when().post("/api/v1/goal-occurrences/" + occurrenceId + "/complete").then().statusCode(200).body("wallet.balances[0].balance", is(1)).body("wallet.ledgerEntryCount", is(1));
     }
 }

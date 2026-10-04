@@ -1,5 +1,7 @@
-package it.tlom.player;
+package it.tlom.controller;
 
+import it.tlom.model.Player;
+import it.tlom.service.PlayerService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

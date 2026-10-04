@@ -1,5 +1,6 @@
-package it.tlom.packagecontent;
+package it.tlom.repository;
 
+import it.tlom.model.ActivityPackage;
 import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 

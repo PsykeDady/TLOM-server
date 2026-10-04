@@ -14,7 +14,7 @@ Run the React client separately from `../TLOM` with `npm start`. The development
 
 ## Architecture
 
-The project is feature-oriented and linear. REST resources call services, which call the in-memory repository. The only cross-feature call is `PackageService -> JourneyService`: installing a validated definition creates Player-owned runtime occurrences. No ports, adapters, ORM or external infrastructure are used.
+The project is organized by component type: `controller` contains REST resources, `service` contains application logic, `repository` contains in-memory data access, and `model` contains domain and API models. Controllers call services, which call repositories. `PackageService -> JourneyService` creates Player-owned runtime occurrences after a validated installation. No ports, adapters, ORM or external infrastructure are used.
 
 Implemented features are `player`, `localization`, `packagecontent` and `journey`. The deterministic development identity is exposed at `GET /api/v1/me`; authentication is intentionally absent. On server startup, the `healthy-lifestyle` package is installed with its declared defaults, so the development Player starts with a pending Daily walk worth `1 HC`.
 

@@ -1,5 +1,6 @@
-package it.tlom.player;
+package it.tlom.service;
 
+import it.tlom.model.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped

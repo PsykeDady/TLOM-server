@@ -1,7 +1,8 @@
-package it.tlom.packagecontent;
+package it.tlom.service;
 
-import it.tlom.journey.JourneyRepository;
-import it.tlom.journey.JourneyService;
+import it.tlom.model.ActivityPackage;
+import it.tlom.repository.JourneyRepository;
+import it.tlom.repository.PackageRepository;
 import it.tlom.shared.ApiException;
 import java.util.HashMap;
 import java.util.List;

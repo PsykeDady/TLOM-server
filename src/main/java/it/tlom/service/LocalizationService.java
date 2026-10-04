@@ -1,4 +1,4 @@
-package it.tlom.localization;
+package it.tlom.service;
 
 import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;

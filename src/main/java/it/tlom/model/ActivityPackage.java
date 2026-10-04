@@ -1,4 +1,4 @@
-package it.tlom.packagecontent;
+package it.tlom.model;
 
 import java.util.List;
 import java.util.Map;
