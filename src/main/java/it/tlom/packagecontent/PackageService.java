@@ -1,8 +1,6 @@
-package it.tlom.service;
+package it.tlom.packagecontent;
 
-import it.tlom.model.ActivityPackage;
-import it.tlom.repository.JourneyRepository;
-import it.tlom.repository.PackageRepository;
+import it.tlom.journey.JourneyService;
 import it.tlom.shared.ApiException;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +14,6 @@ import jakarta.ws.rs.core.Response;
 public class PackageService {
     private static final String GOAL_REWARD_AMOUNT = "GOAL_REWARD_AMOUNT";
     @Inject PackageRepository repository;
-    @Inject JourneyRepository journeyRepository;
     @Inject JourneyService journeyService;
 
     void bootstrapHealthyLifestyle(@Observes io.quarkus.runtime.StartupEvent event) {
@@ -32,11 +29,11 @@ public class PackageService {
 
     public ActivityPackage.Installation install(String packageId, Map<String, Object> requestedValues) {
         var definition = packageById(packageId);
-        var existing = journeyRepository.installations().stream().filter(item -> item.packageId().equals(definition.id()) && item.packageVersion().equals(definition.version())).findFirst();
-        if (existing.isPresent()) return existing.get();
+        if (journeyService.installed(definition.id(), definition.version())) {
+            return journeyService.journey().installations().stream().filter(item -> item.packageId().equals(definition.id()) && item.packageVersion().equals(definition.version())).findFirst().orElseThrow();
+        }
         var values = resolveConfiguration(definition, requestedValues == null ? Map.of() : requestedValues);
-        journeyService.install(resolveDefinition(definition, values), values);
-        return journeyRepository.installations().stream().filter(item -> item.packageId().equals(definition.id()) && item.packageVersion().equals(definition.version())).findFirst().orElseThrow();
+        return journeyService.install(resolveDefinition(definition, values), values);
     }
 
     private Map<String, Integer> resolveConfiguration(ActivityPackage definition, Map<String, Object> requestedValues) {

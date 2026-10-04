@@ -12,11 +12,32 @@ Run the server with Java 21:
 
 Run the React client separately from `../TLOM` with `npm start`. The development client uses `http://localhost:8080/api/v1` by default; set `REACT_APP_TLOM_API_URL` to override it. CORS permits the standard React development ports 3000 and 3001.
 
+## PostgreSQL
+
+The server uses PostgreSQL, Hibernate ORM and Flyway. Flyway owns schema evolution; Hibernate validates the schema and never creates or drops it. With a Docker-compatible runtime running, Quarkus Dev Services starts an isolated PostgreSQL container automatically for `./mvnw quarkus:dev` and `./mvnw test`. Podman is supported through its rootless Docker-compatible socket:
+
+```sh
+systemctl --user enable --now podman.socket
+export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+./mvnw test
+```
+
+To use an existing local PostgreSQL instance instead, create a database and export standard Quarkus datasource variables before starting the server:
+
+```sh
+export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://localhost:5432/tlom
+export QUARKUS_DATASOURCE_USERNAME=tlom
+export QUARKUS_DATASOURCE_PASSWORD=tlom
+./mvnw quarkus:dev
+```
+
+For a production-profile deployment, set `TLOM_DB_URL`, `TLOM_DB_USERNAME`, and `TLOM_DB_PASSWORD`. On a fresh database, `src/main/resources/db/migration/V1__initial_schema.sql` is applied before startup bootstrap.
+
 ## Architecture
 
-The project is organized by component type: `controller` contains REST resources, `service` contains application logic, `repository` contains in-memory data access, and `model` contains domain and API models. Controllers call services, which call repositories. `PackageService -> JourneyService` creates Player-owned runtime occurrences after a validated installation. Purchases follow `PurchaseRest -> PurchaseService -> StoreService/JourneyService -> PurchaseRepository/JourneyRepository`. No ports, adapters, ORM or external infrastructure are used.
+The project is organized by feature: `player`, `localization`, `packagecontent`, `journey`, `store`, and `purchase`; shared HTTP error handling remains in `shared`. REST resources call services, which call repositories. Cross-feature service calls are limited to genuine workflows: `PackageService -> JourneyService` creates Player-owned runtime occurrences after a validated installation, while purchases follow `PurchaseRest -> PurchaseService -> StoreService/JourneyService -> PurchaseRepository/JourneyRepository`. Hibernate entity classes remain next to the feature that owns them; no global persistence layer exists.
 
-Implemented features are `player`, `localization`, `packagecontent` and `journey`. The deterministic development identity is exposed at `GET /api/v1/me`; authentication is intentionally absent. On server startup, the `healthy-lifestyle` package is installed with its declared defaults, so the development Player starts with a pending Daily walk worth `1 HC`.
+Implemented features are `player`, `localization`, `packagecontent`, `journey`, `store`, and `purchase`. The deterministic development identity is exposed at `GET /api/v1/me`; authentication is intentionally absent. On server startup, the `healthy-lifestyle` package is installed with its declared defaults, so the development Player starts with a pending Daily walk worth `1 HC`.
 
 ## API
 
@@ -33,11 +54,15 @@ Implemented features are `player`, `localization`, `packagecontent` and `journey
 
 Errors are JSON `{code, message}` responses. Client-provided reward amounts, balances, prices and completion state are never trusted. Purchase debits are negative Ledger entries with `PURCHASE:<purchaseId>` source keys; the Wallet remains a projection of all Ledger entries. A repeated Purchase `requestId` returns the original Purchase and does not create another debit, while a different request ID can buy the same item again when funds permit.
 
-## Cache And Persistence
+## Persistence Boundary
 
-The React API client caches read responses in memory. Localization implements `ETag`/`If-None-Match`; the package and installed Store catalogs use the same cache helper but do not yet expose an ETag. Journey, Wallet and Purchase history are server-authoritative projections refreshed after commands. Repositories are in memory: restarting the server resets Player state and reapplies the Healthy Lifestyle bootstrap. React refresh while the server remains running reconstructs migrated journey, wallet and purchases from server responses.
+PostgreSQL persists the deterministic development Player, Package Installations and their configuration snapshots, GoalOccurrence state, immutable Ledger entries, and Purchase price snapshots. Package Definitions, localization content, currencies/goals/stores materialized from Package Definitions, and Wallet balances are not tables: they are static or derived projections. Wallet remains `SUM(ledger_entry.amount)` scoped by Player and currency, never a mutable persisted balance.
 
-Party/Master, authentication, persistence and migrations, Package updates/reconfiguration, scheduling, offline write synchronization and complete localization remain deferred. Completion retry safety currently derives from the stored occurrence and ledger source key; Purchase request idempotency is retained in memory for the server process lifetime.
+Package installation is unique per Player/package/version. Ledger source keys are unique per Player. Purchase request IDs are unique per Player, so retrying a request after restart returns its original Purchase without another debit. Purchase transactions pessimistically lock the Player row before checking the Ledger balance, then persist Purchase and debit in one Jakarta transaction. Goal completion locks its GoalOccurrence and persists completion plus reward credits in one transaction.
+
+The React API client caches read responses in memory. Localization implements `ETag`/`If-None-Match`; the package and installed Store catalogs use the same cache helper but do not yet expose an ETag. Journey, Wallet and Purchase history are server-authoritative projections refreshed after commands. Restarting the server preserves the persisted authoritative runtime state and rebuilds projections from PostgreSQL plus the static Package catalog.
+
+Party/Master, authentication, Package updates/reconfiguration, scheduling, offline write synchronization and complete localization remain deferred.
 
 Run server tests with `./mvnw test`.
 # tlom-server

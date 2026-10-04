@@ -1,13 +1,15 @@
-package it.tlom.service;
+package it.tlom.purchase;
 
-import it.tlom.model.Purchase;
-import it.tlom.repository.JourneyRepository;
-import it.tlom.repository.PurchaseRepository;
+import it.tlom.journey.JourneyRepository;
+import it.tlom.journey.JourneyService;
+import it.tlom.player.PlayerService;
+import it.tlom.store.StoreService;
 import it.tlom.shared.ApiException;
 import java.time.Instant;
 import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
@@ -18,11 +20,14 @@ public class PurchaseService {
     @Inject PurchaseRepository purchaseRepository;
     @Inject PlayerService playerService;
 
+    @Transactional
     public PurchaseResult purchase(String storeId, String storeItemId, String requestId) {
         if (storeItemId == null || storeItemId.isBlank() || requestId == null || requestId.isBlank()) {
             throw new ApiException(Response.Status.BAD_REQUEST, "INVALID_PURCHASE_REQUEST");
         }
-        var previousPurchase = purchaseRepository.findByRequestId(requestId);
+        playerService.lockCurrentPlayer();
+        String playerId = playerService.currentPlayer().id();
+        var previousPurchase = purchaseRepository.findByRequestId(playerId, requestId);
         if (previousPurchase != null) return new PurchaseResult(previousPurchase, journeyService.wallet());
 
         var store = storeService.storeById(storeId);
@@ -38,14 +43,14 @@ public class PurchaseService {
             throw new ApiException(Response.Status.CONFLICT, "INSUFFICIENT_FUNDS");
         }
 
-        var purchase = new Purchase(requestId, requestId, playerService.currentPlayer().id(), store.id(), item.id(), price, Instant.now().toString());
+        var purchase = new Purchase(requestId, requestId, playerId, store.id(), item.id(), price, Instant.now().toString());
         purchaseRepository.add(purchase);
         String sourceKey = "PURCHASE:" + purchase.id();
-        journeyRepository.addLedger(new JourneyRepository.LedgerState(sourceKey, price.currencyId(), -price.amount(), "PURCHASE", purchase.id(), sourceKey));
+        journeyRepository.addLedger(playerId, new JourneyRepository.LedgerState(sourceKey, price.currencyId(), -price.amount(), "PURCHASE", purchase.id(), sourceKey));
         return new PurchaseResult(purchase, journeyService.wallet());
     }
 
-    public List<Purchase> purchases() { return purchaseRepository.findAll(); }
+    public List<Purchase> purchases() { return purchaseRepository.findAll(playerService.currentPlayer().id()); }
 
     public record PurchaseResult(Purchase purchase, JourneyService.WalletResponse wallet) { }
 }

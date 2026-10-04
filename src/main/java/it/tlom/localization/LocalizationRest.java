@@ -1,6 +1,6 @@
-package it.tlom.controller;
+package it.tlom.localization;
 
-import it.tlom.service.LocalizationService;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;

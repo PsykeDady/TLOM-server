@@ -1,6 +1,5 @@
-package it.tlom.controller;
+package it.tlom.journey;
 
-import it.tlom.service.JourneyService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

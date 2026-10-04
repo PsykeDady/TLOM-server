@@ -1,6 +1,4 @@
-package it.tlom.controller;
-
-import it.tlom.service.StoreService;
+package it.tlom.store;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

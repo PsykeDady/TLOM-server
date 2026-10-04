@@ -1,7 +1,4 @@
-package it.tlom.controller;
-
-import it.tlom.model.ActivityPackage;
-import it.tlom.service.PackageService;
+package it.tlom.packagecontent;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.GET;

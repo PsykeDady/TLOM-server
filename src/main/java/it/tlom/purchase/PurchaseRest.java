@@ -1,6 +1,4 @@
-package it.tlom.controller;
-
-import it.tlom.service.PurchaseService;
+package it.tlom.purchase;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
